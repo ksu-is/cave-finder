@@ -1,28 +1,33 @@
-import arcpy
+import laspy
 import pandas as pd
 
-#path to workspace and lidar data
+#Path to the LAZ file
+input_laz_file = r"D:/Desktop/lidartest.laz"
 
-arcpy.env.workspace = r"D:/Desktop/ARCgistest.laz"  
-lidar_data = "D:/Desktop/TEST.las"  
+#Path to the output Excel file
+output_excel_file = r"D:/Desktop/lidarexcel.xlsx"
 
-#convert lidar data into feature class
+def read_laz(laz_file, excel_file, max_entries=3000):
+    try:
+        #read LAZ file
+        las_file = laspy.read(laz_file)
 
-output_feature_class = "lidar_points"
-arcpy.conversion.LASDatasetToFeatureClass(lidar_data, arcpy.env.workspace, output_feature_class)
+        #Extract X, Y, Z coordinates and convert to lists
+        x = list(las_file.x)[:max_entries]
+        y = list(las_file.y)[:max_entries]
+        z = list(las_file.z)[:max_entries]
 
-#convert feature cass to dataframe
+        #Create DataFrame
+        df = pd.DataFrame({"X": x, "Y": y, "Z": z})
 
-fields = ['SHAPE@X', 'SHAPE@Y', 'SHAPE@Z']
-data = []
-with arcpy.da.SearchCursor(output_feature_class, fields) as cursor:
-    for row in cursor:
-        data.append(row)
-#convert data  to dataFrame
-df = pd.DataFrame(data, columns=['X', 'Y', 'Z'])
+        #Export DataFrame to Excel
+        df.to_excel(excel_file, index=False)
+        print(f"Point data exported to {excel_file}")
 
-# export to excel
-excel_file = "lidar_data.xlsx"
-df.to_excel(excel_file, index=False)
+    except Exception as e:
+        print("An error occurred:", str(e))
 
-print("LIDAR data has been imported into Excel successfully.")
+try:
+    read_laz(input_laz_file, output_excel_file)
+except Exception as e:
+    print("An error occurred:", str(e))
